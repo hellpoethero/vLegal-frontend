@@ -1,0 +1,30 @@
+/* You can add global styles to this file, and also import other style files */
+@use './tailwind.css';
+@use './layout/layout.scss';
+@use 'primeicons/primeicons.css';
+@use './demo/demo.scss';
+
+
+
+.my-card {
+    // background: #fff; 
+    border-radius: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.25s ease;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+.card:last-child {
+    margin-bottom: 20px;
+}
+
+th {
+    white-space: nowrap;
+}
+
+.no-wrap {
+    white-space: nowrap;
+}

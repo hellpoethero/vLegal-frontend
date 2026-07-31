@@ -1,0 +1,20 @@
+.layout-sidebar {
+    position: fixed;
+    width: 20rem;
+    height: calc(100vh - 4rem);
+    z-index: 999;
+    overflow-y: auto;
+    user-select: none;
+    top: 4rem;
+    left: 0rem;
+    transition:
+        transform var(--layout-section-transition-duration),
+        left var(--layout-section-transition-duration);
+    // background-color: transparent;
+    border-radius: var(--content-border-radius);
+    padding: 0.5rem 1.5rem;
+}
+
+.layout-main-container {
+    margin-left: 20rem;
+}
