@@ -11,6 +11,7 @@ import { Knowledgebase } from './app/features/knowledgebase/knowledgebase';
 import { Tools } from './app/features/tools/tools';
 import { NewChat } from '@/features/chatbot/new-chat/new-chat';
 import { OldChat } from '@/features/chatbot/old-chat/old-chat';
+import { DocumentEditor } from '@/features/doc/editor/editor';
 
 export const appRoutes: Routes = [
     {
@@ -20,6 +21,7 @@ export const appRoutes: Routes = [
             { path: '', component: Dashboard },
             { path: 'chat', component: NewChat },
             { path: 'chat/:id', component: OldChat },
+            { path: 'doc', component: DocumentEditor },
             { path: 'agents-management', component: Agents },
             { path: 'models-management', component: Models },
             { path: 'datasources-management', component: Datasources },

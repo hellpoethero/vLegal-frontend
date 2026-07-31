@@ -23,6 +23,7 @@ export class AppMenu {
             {
                 items: [
                     { label: 'Tạo mới', icon: 'pi pi-fw pi-plus', routerLink: ['/chat'] },
+                    { label: 'Văn bản', icon: 'pi pi-fw pi-file', routerLink: ['/doc'] },
                     { label: 'Dự án', icon: 'pi pi-fw pi-home' },
                     { label: 'Dữ liệu', icon: 'pi pi-fw pi-home' },
                     { label: 'Skill', icon: 'pi pi-fw pi-home' },

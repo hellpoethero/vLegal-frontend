@@ -52,7 +52,7 @@
                         <p-menu #toolsMenu [popup]="true" [model]="tools" [appendTo]="'body'"></p-menu>
                         @for (tool of selectedTools; track tool) {
                         <span class="tool-tag">
-                            <p-tag [value]="tool" severity="primary" />
+                            <p-tag [value]="tool" />
                             <p-button type="button" icon="pi pi-times" [text]="true" [rounded]="true" severity="primary"
                                 size="small" [attr.aria-label]="'Xóa ' + tool" (click)="removeTool(tool)" />
                         </span>

@@ -173,10 +173,8 @@ export class OldChat implements OnInit, OnDestroy {
 
     selectDocument(document: GeneratedDocument): void {
         this.selectedDocument = document;
+        this.isDocumentOpen = true;
         this.updateDocumentOptions();
-        requestAnimationFrame(() => {
-            this.isDocumentOpen = true;
-        });
     }
 
     closeDocument(): void {
