@@ -37,11 +37,11 @@ export class AppMenu {
             {
                 label: 'Lịch sử',
                 items: [
-                    { label: 'Trò chuyện 1' },
-                    { label: 'Trò chuyện 2' },
-                    { label: 'Trò chuyện 3' },
-                    { label: 'Trò chuyện 4' },
-                    { label: 'Trò chuyện 5' },
+                    { label: 'Trò chuyện 1', routerLink: ['/chat/chat-1'] },
+                    { label: 'Trò chuyện 2', routerLink: ['/chat/chat-2'] },
+                    { label: 'Trò chuyện 3', routerLink: ['/chat/chat-3'] },
+                    { label: 'Trò chuyện 4', routerLink: ['/chat/chat-4'] },
+                    { label: 'Trò chuyện 5', routerLink: ['/chat/chat-5'] },
                 ]
 
             },

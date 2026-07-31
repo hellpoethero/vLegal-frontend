@@ -1,0 +1,149 @@
+<div class="chatbot-page old-chat-page">
+    <main class="old-chat-content" [class.has-document]="selectedDocument" [class.is-doc-open]="isDocumentOpen">
+        <!-- CỘT 1: KHU VỰC CHAT (Chia làm 2 div: Div 1 cho lịch sử chat, Div 2 cho ô chat ở dưới cùng) -->
+        <section class="chat-section" aria-label="Khu vực trò chuyện">
+            <div class="chat-section-header">
+                <h2>{{ chatTitle }}</h2>
+            </div>
+            <div class="chat-history-body">
+                @for (message of messages; track $index) {
+                <div class="message-row" [class.user-message]="message.role === 'user'"
+                    [class.agent-message]="message.role === 'agent'">
+                    <div class="message-bubble">{{ message.text }}</div>
+                </div>
+                }
+                @if (isGenerating) {
+                <div class="agent-activity" aria-live="polite">
+                    <span class="activity-dots"><i></i><i></i><i></i></span>
+                    <span>{{ activityLabel }}</span>
+                </div>
+                }
+                @if (!isGenerating) {
+                <div class="generated-heading">
+                    <h2>Văn bản</h2>
+                    <span>{{ generatedDocuments.length }} văn bản</span>
+                </div>
+                <div class="document-list">
+                    @for (document of generatedDocuments; track document.id) {
+                    <button type="button" class="card my-card document-card"
+                        [class.is-selected]="selectedDocument?.id === document.id" (click)="selectDocument(document)">
+                        <span class="document-icon">{{ document.type }}</span>
+                        <span class="document-copy">
+                            <strong>{{ document.title }}</strong>
+                            <small>{{ document.description }}</small>
+                        </span>
+                        <i class="pi pi-arrow-up-right document-arrow" aria-hidden="true"></i>
+                    </button>
+                    }
+                </div>
+                }
+            </div>
+
+            <div class="chat-composer" aria-label="Nhập yêu cầu">
+                <div class="composer-input-row">
+                    <textarea pTextarea rows="1" [(ngModel)]="chatInput" (input)="resizePrompt($event)"
+                        placeholder="Nhập tác vụ bạn muốn thực hiện..." aria-label="Nội dung yêu cầu"
+                        maxlength="5000"></textarea>
+                </div>
+                <div class="composer-toolbar">
+                    <div class="toolbar-left">
+                        <p-button type="button" icon="pi pi-plus" [text]="true" [rounded]="true" severity="secondary"
+                            aria-label="Mở công cụ" (click)="toolsMenu.toggle($event)" />
+                        <p-menu #toolsMenu [popup]="true" [model]="tools" [appendTo]="'body'"></p-menu>
+                        @for (tool of selectedTools; track tool) {
+                        <span class="tool-tag">
+                            <p-tag [value]="tool" severity="primary" />
+                            <p-button type="button" icon="pi pi-times" [text]="true" [rounded]="true" severity="primary"
+                                size="small" [attr.aria-label]="'Xóa ' + tool" (click)="removeTool(tool)" />
+                        </span>
+                        }
+                    </div>
+                    <div class="toolbar-right">
+                        <p-button type="button" [label]="selectedModel" icon="pi pi-chevron-down" iconPos="right"
+                            [text]="true" severity="secondary" styleClass="model-button" aria-label="Chọn mô hình"
+                            (click)="modelMenu.toggle($event)" />
+                        <p-menu #modelMenu [popup]="true" [model]="modelOptions" [appendTo]="'body'"></p-menu>
+                        <p-button type="button" icon="pi pi-arrow-up" [rounded]="true" aria-label="Gửi yêu cầu"
+                            (click)="sendMessage()" />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CHẾ ĐỘ 3 CỘT: CỘT 2 (Tài liệu) & CỘT 3 (Comment & Thảo luận) -->
+        @if (selectedDocument) {
+        <section class="card my-card document-preview" aria-label="Nội dung văn bản">
+            <div class="preview-header">
+                <div class="preview-title-container">
+                    <p-tag [value]="selectedDocument.type" severity="secondary" styleClass="doc-type-tag" />
+                    <h2 class="text-dropdown-title doc-title-header" (click)="docSelectMenu.toggle($event)">
+                        <span>{{ selectedDocument.title }}</span>
+                        <i class="pi pi-chevron-down" aria-hidden="true"></i>
+                    </h2>
+                    <p-menu #docSelectMenu [popup]="true" [model]="documentOptions" [appendTo]="'body'"></p-menu>
+                </div>
+                <p-button type="button" icon="pi pi-times" [text]="true" [rounded]="true" severity="secondary"
+                    aria-label="Đóng văn bản" (click)="closeDocument()" />
+            </div>
+            <div class="preview-toolbar" hidden>
+                <span><i class="pi pi-check-circle"></i> Đã lưu tự động</span>
+                <span>12 trang</span>
+                <p-button type="button" label="Tải xuống" icon="pi pi-download" severity="secondary" outlined
+                    size="small" />
+            </div>
+            <article class="document-body">
+                <h3>Tóm tắt điều hành</h3>
+                <p>Văn bản này tổng hợp các thông tin chính, những phát hiện nổi bật và đề xuất hành động dựa trên yêu
+                    cầu của bạn.</p>
+                <h3>1. Những điểm chính</h3>
+                <p>Các nội dung đã được phân loại theo chủ đề, ưu tiên những dữ liệu có tác động trực tiếp đến quyết
+                    định tiếp theo.</p>
+                <div class="document-highlight"><i class="pi pi-lightbulb"></i><span><strong>Gợi ý từ AI</strong> Có thể
+                        dùng phần này làm phần mở đầu cho báo cáo chính thức.</span></div>
+                <h3>2. Đề xuất</h3>
+                <p>Tiếp tục rà soát các nguồn tham chiếu, thống nhất số liệu và xác nhận các giả định trước khi chia sẻ
+                    với đội ngũ.</p>
+            </article>
+        </section>
+
+        <aside class="comments-panel" aria-label="Comment và văn bản tham chiếu">
+            <div class="comments-heading">
+                <div>
+                    <h2 class="text-dropdown-title" (click)="commentViewMenu.toggle($event)">
+                        <span>{{ selectedCommentView }}</span>
+                        <i class="pi pi-chevron-down" aria-hidden="true"></i>
+                    </h2>
+                    <p-menu #commentViewMenu [popup]="true" [model]="commentViewOptions" [appendTo]="'body'"></p-menu>
+                </div>
+                @if (selectedCommentView !== 'Văn bản tham chiếu') {
+                <span>{{ comments.length }}</span>
+                }
+            </div>
+            @if (selectedCommentView !== 'Văn bản tham chiếu') {
+            <div class="comment-list">
+                @for (comment of comments; track comment.author + comment.text) {
+                <div class="comment-card">
+                    <div class="comment-author">
+                        <span>{{ comment.initials }}</span>
+                        <strong>{{ comment.author }}</strong>
+                        <small>{{ comment.meta }}</small>
+                    </div>
+                    <p>{{ comment.text }}</p>
+                </div>
+                }
+            </div>
+            }
+            @if (selectedCommentView !== 'Nhận xét') {
+            <div class="reference-card">
+                <i class="pi pi-link"></i>
+                <div>
+                    <strong>Văn bản tham chiếu</strong>
+                    <small>4 nguồn đã được sử dụng</small>
+                </div>
+                <i class="pi pi-chevron-right"></i>
+            </div>
+            }
+        </aside>
+        }
+    </main>
+</div>

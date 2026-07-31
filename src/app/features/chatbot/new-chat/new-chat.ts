@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MenuItem } from 'primeng/api';
@@ -7,15 +8,18 @@ import { InputTextModule } from 'primeng/inputtext';
 import { MenuModule } from 'primeng/menu';
 import { TagModule } from 'primeng/tag';
 import { FileUploadModule } from 'primeng/fileupload';
+import { TextareaModule } from 'primeng/textarea';
 
 @Component({
     selector: 'app-new-chat',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, MenuModule, TagModule, FileUploadModule],
+    imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, TextareaModule, MenuModule, TagModule, FileUploadModule],
     templateUrl: './new-chat.html',
     styleUrl: './new-chat.scss'
 })
 export class NewChat {
+    constructor(private readonly router: Router) { }
+
     chatInput = '';
 
     selectedModel = 'GPT-4o';
@@ -35,7 +39,13 @@ export class NewChat {
     tools: MenuItem[] = [
         { label: 'Tìm kiếm web', icon: 'pi pi-globe', command: () => this.addTool('Tìm kiếm web') },
         { label: 'Phân tích dữ liệu', icon: 'pi pi-chart-bar', command: () => this.addTool('Phân tích dữ liệu') },
-        { label: 'Tải tệp lên', icon: 'pi pi-paperclip', command: () => this.addTool('Tải tệp lên') }
+        { label: 'Tải tệp lên', icon: 'pi pi-paperclip', command: () => this.addTool('Tải tệp lên') },
+        { label: 'Tổng hợp báo cáo', icon: 'pi pi-file-edit', command: () => this.addTool('Tổng hợp báo cáo') },
+        { label: 'Tóm tắt văn bản', icon: 'pi pi-align-left', command: () => this.addTool('Tóm tắt văn bản') },
+        { label: 'Đánh giá văn bản', icon: 'pi pi-search', command: () => this.addTool('Đánh giá văn bản') },
+        { label: 'Brainstorm ý tưởng', icon: 'pi pi-lightbulb', command: () => this.addTool('Brainstorm ý tưởng') },
+        { label: 'Dịch thuật', icon: 'pi pi-language', command: () => this.addTool('Dịch thuật') },
+        { label: 'Viết và sửa code', icon: 'pi pi-code', command: () => this.addTool('Viết và sửa code') }
     ];
 
     tasks = [
@@ -86,8 +96,27 @@ export class NewChat {
         this.selectedModel = model;
     }
 
+    resizePrompt(event: Event): void {
+        const textarea = event.target as HTMLTextAreaElement;
+        const maxHeight = 240;
+
+        textarea.style.height = 'auto';
+        textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
+        textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+    }
+
+    isSubmitting = false;
+
     sendMessage(): void {
-        if (!this.chatInput.trim()) return;
-        console.log('Starting chat:', { message: this.chatInput.trim(), model: this.selectedModel, tools: this.selectedTools });
+        const prompt = this.chatInput.trim();
+        if (!prompt || this.isSubmitting) return;
+
+        this.isSubmitting = true;
+        const chatId = `chat-${Date.now()}`;
+        setTimeout(() => {
+            void this.router.navigate(['/chat', chatId], {
+                queryParams: { prompt: prompt }
+            });
+        }, 360);
     }
 }

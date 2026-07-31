@@ -1,0 +1,214 @@
+@use '../_chatbot.scss' as *;
+
+:host {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0%;
+    height: 100%;
+    min-height: 0;
+    width: 100%;
+    overflow-x: visible;
+    overflow-y: hidden;
+}
+
+.old-chat-page {
+    width: 100%;
+    height: 100%;
+    flex: 1 1 0%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem 1rem 1rem 1rem;
+    box-sizing: border-box;
+    overflow-x: visible;
+    overflow-y: hidden;
+    background: transparent;
+    animation: oldChatPageEntrance 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.old-chat-content {
+    width: 100%;
+    height: 100%;
+    flex: 1 1 0%;
+    min-height: 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* CỘT CHAT (Cột lịch sử) */
+    .chat-section {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+        transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+            min-width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+            max-width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+            flex 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+            margin 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+
+        /* Div 1: Lịch sử tin nhắn (Có height cố định & cuộn nội bộ) */
+        .chat-history-body {
+            flex: 1 1 0%;
+            min-height: 0;
+            overflow-y: auto;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* Div 2: Ô chat cố định ở dưới cùng của cột chat */
+        .chat-composer {
+            flex: 0 0 auto;
+            width: 100%;
+            margin-top: auto;
+            border-radius: 1rem;
+        }
+    }
+
+    /* ------------------------------------------------------------- */
+    /* CHẾ ĐỘ 1 CỘT (Khi KHÔNG mở document)                          */
+    /* Căn giữa 100% tuyệt đối bằng margin: 0 auto với width 640px    */
+    /* ------------------------------------------------------------- */
+    &:not(.is-doc-open) {
+
+        .chat-section {
+            width: 800px;
+            max-width: 100%;
+            flex: 0 0 auto;
+            margin: 0 auto;
+        }
+
+        .document-preview {
+            opacity: 0;
+            transform: translateX(50px);
+            pointer-events: none;
+            transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            min-width: 640px;
+            height: 100%;
+            position: absolute;
+            right: 0;
+        }
+
+        .comments-panel {
+            opacity: 0;
+            transform: translateX(80px);
+            pointer-events: none;
+            transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            width: 270px;
+            height: 100%;
+            position: absolute;
+            right: 0;
+        }
+    }
+
+    /* ------------------------------------------------------------- */
+    /* CHẾ ĐỘ 3 CỘT (Khi is-doc-open LÀ TRUE)                        */
+    /* Cột lịch sử thu về 480px bên trái                             */
+    /* ------------------------------------------------------------- */
+    &.is-doc-open {
+        justify-content: flex-start;
+        gap: 1rem;
+
+        .chat-section {
+            padding-top: 5px;
+            flex: 0 0 480px;
+            width: 480px;
+            min-width: 480px;
+            max-width: 480px;
+            margin-bottom: 0;
+        }
+
+        .document-preview {
+            flex: 1 0 640px;
+            min-width: 640px;
+            height: 100%;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin: 0;
+            box-sizing: border-box;
+            opacity: 1;
+            transform: translateX(0);
+            position: relative;
+            transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+
+            .document-body {
+                flex: 1 1 0%;
+                min-height: 0;
+                overflow-y: auto;
+                // padding: 1.5rem 2rem;
+                padding: 0.5rem;
+                max-width: 800px;
+                margin: 0 auto;
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
+
+        .comments-panel {
+            flex: 0 0 270px;
+            width: 270px;
+            min-width: 270px;
+            max-width: 270px;
+            height: 100%;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-sizing: border-box;
+            opacity: 1;
+            transform: translateX(0);
+            position: relative;
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+
+            .comment-list {
+                flex: 1 1 0%;
+                min-height: 0;
+                overflow-y: auto;
+            }
+        }
+    }
+}
+
+@keyframes oldChatPageEntrance {
+    0% {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .old-chat-content:not(.is-doc-open) {
+        .chat-section {
+            margin: 0 auto;
+            width: 100%;
+            min-width: 100%;
+            max-width: 100%;
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .model-button {
+        min-width: 8.5rem;
+    }
+}

@@ -1,4 +1,4 @@
-<div class="card my-card new-chat-page">
+<div class="chatbot-page new-chat-page" [class.is-submitting]="isSubmitting">
     <main class="new-chat-content">
         <section class="welcome-section" aria-labelledby="welcome-title">
             <div class="welcome-mark" aria-hidden="true"><i class="pi pi-sparkles"></i></div>
@@ -6,31 +6,30 @@
             <h1 id="welcome-title">Hôm nay tôi có thể giúp gì cho bạn?</h1>
             <p class="welcome-description">Bắt đầu một cuộc trò chuyện mới hoặc chọn nhanh một tác vụ bên dưới.</p>
         </section>
-
         <section class="chat-composer" aria-label="Nhập yêu cầu">
             <div class="composer-input-row">
-                <input pInputText type="text" [(ngModel)]="chatInput" (keyup.enter)="sendMessage()"
-                    placeholder="Nhập tác vụ bạn muốn thực hiện..." aria-label="Nội dung yêu cầu" />
+                <textarea pTextarea rows="1" [(ngModel)]="chatInput" (input)="resizePrompt($event)"
+                    placeholder="Nhập tác vụ bạn muốn thực hiện..." aria-label="Nội dung yêu cầu"
+                    maxlength="5000"></textarea>
             </div>
             <div class="composer-toolbar">
                 <div class="toolbar-left">
                     <p-button type="button" icon="pi pi-plus" [text]="true" [rounded]="true" severity="secondary"
                         aria-label="Mở công cụ" (click)="toolsMenu.toggle($event)" />
-                    <p-menu #toolsMenu [popup]="true" [model]="tools"></p-menu>
+                    <p-menu #toolsMenu [popup]="true" [model]="tools" [appendTo]="'body'"></p-menu>
                     @for (tool of selectedTools; track tool) {
-                        <span class="tool-tag">
-                            <p-tag [value]="tool" severity="primary" />
-                            <p-button type="button" icon="pi pi-times" [text]="true" [rounded]="true"
-                                severity="primary" size="small" [attr.aria-label]="'Xóa ' + tool"
-                                (click)="removeTool(tool)" />
-                        </span>
+                    <span class="tool-tag">
+                        <p-tag [value]="tool" severity="primary" />
+                        <p-button type="button" icon="pi pi-times" [text]="true" [rounded]="true" severity="primary"
+                            size="small" [attr.aria-label]="'Xóa ' + tool" (click)="removeTool(tool)" />
+                    </span>
                     }
                 </div>
                 <div class="toolbar-right">
                     <p-button type="button" [label]="selectedModel" icon="pi pi-chevron-down" iconPos="right"
                         [text]="true" severity="secondary" styleClass="model-button" aria-label="Chọn mô hình"
                         (click)="modelMenu.toggle($event)" />
-                    <p-menu #modelMenu [popup]="true" [model]="modelOptions"></p-menu>
+                    <p-menu #modelMenu [popup]="true" [model]="modelOptions" [appendTo]="'body'"></p-menu>
                     <p-button type="button" icon="pi pi-arrow-up" [rounded]="true" aria-label="Gửi yêu cầu"
                         (click)="sendMessage()" />
                 </div>
@@ -39,52 +38,53 @@
 
         <section class="task-section" aria-labelledby="task-title">
             @if (!activeTask) {
-                <div class="task-heading">
-                    <h2 id="task-title">Bạn muốn bắt đầu với việc gì?</h2>
-                    <span>{{ tasks.length }} gợi ý</span>
-                </div>
-                <div class="task-grid">
-                    @for (task of tasks; track task.title) {
-                        <button type="button" class="task-card" (click)="useTask(task.title)">
-                            <span class="task-icon"><i [class]="task.icon"></i></span>
-                            <span class="task-copy">
-                                <strong>{{ task.title }}</strong>
-                                <small>{{ task.description }}</small>
-                            </span>
-                            <i class="pi pi-arrow-right task-arrow" aria-hidden="true"></i>
-                        </button>
-                    }
-                </div>
+            <div class="task-heading">
+                <h2 id="task-title">Bạn muốn bắt đầu với việc gì?</h2>
+                <span>{{ tasks.length }} gợi ý</span>
+            </div>
+            <div class="task-grid">
+                @for (task of tasks; track task.title) {
+                <button type="button" class="task-card" (click)="useTask(task.title)">
+                    <span class="task-icon"><i [class]="task.icon"></i></span>
+                    <span class="task-copy">
+                        <strong>{{ task.title }}</strong>
+                        <small>{{ task.description }}</small>
+                    </span>
+                    <i class="pi pi-arrow-right task-arrow" aria-hidden="true"></i>
+                </button>
+                }
+            </div>
             } @else {
-                <div class="data-source-heading">
-                    <div>
-                        <h2 id="task-title">Chọn dữ liệu cho tác vụ</h2>
-                        <p>{{ activeTask }}</p>
-                    </div>
-                    <p-button type="button" label="Hủy" icon="pi pi-times" [text]="true" severity="secondary"
-                        (click)="cancelTask()" />
+            <div class="data-source-heading">
+                <div>
+                    <h2 id="task-title">Chọn dữ liệu cho tác vụ</h2>
+                    <p>{{ activeTask }}</p>
                 </div>
-                <div class="data-source-grid">
-                    <button type="button" class="data-source-card" [class.is-selected]="selectedDataSource === 'system'"
-                        (click)="chooseDataSource('system')">
-                        <span class="data-source-icon"><i class="pi pi-database"></i></span>
-                        <span class="task-copy">
-                            <strong>Dữ liệu trên hệ thống</strong>
-                            <small>Chọn tài liệu và dữ liệu đã có sẵn</small>
-                        </span>
-                        <i class="pi pi-arrow-right task-arrow" aria-hidden="true"></i>
-                    </button>
-                    <div class="data-source-card upload-card" [class.is-selected]="selectedDataSource === 'upload'">
-                        <span class="data-source-icon"><i class="pi pi-cloud-upload"></i></span>
-                        <span class="task-copy">
-                            <strong>Tải file lên</strong>
-                            <small>Thêm tài liệu từ thiết bị của bạn</small>
-                            <p-fileupload mode="basic" chooseLabel="Chọn file" chooseIcon="pi pi-upload"
-                                name="chat-files" [auto]="false" (onSelect)="chooseDataSource('upload')" />
-                        </span>
-                    </div>
+                <p-button type="button" label="Hủy" icon="pi pi-times" [text]="true" severity="secondary"
+                    (click)="cancelTask()" />
+            </div>
+            <div class="data-source-grid">
+                <button type="button" class="data-source-card" [class.is-selected]="selectedDataSource === 'system'"
+                    (click)="chooseDataSource('system')">
+                    <span class="data-source-icon"><i class="pi pi-database"></i></span>
+                    <span class="task-copy">
+                        <strong>Dữ liệu trên hệ thống</strong>
+                        <small>Chọn tài liệu và dữ liệu đã có sẵn</small>
+                    </span>
+                    <i class="pi pi-arrow-right task-arrow" aria-hidden="true"></i>
+                </button>
+                <div class="data-source-card upload-card" [class.is-selected]="selectedDataSource === 'upload'">
+                    <span class="data-source-icon"><i class="pi pi-cloud-upload"></i></span>
+                    <span class="task-copy">
+                        <strong>Tải file lên</strong>
+                        <small>Thêm tài liệu từ thiết bị của bạn</small>
+                        <p-fileupload mode="basic" chooseLabel="Chọn file" chooseIcon="pi pi-upload" name="chat-files"
+                            [auto]="false" (onSelect)="chooseDataSource('upload')" />
+                    </span>
                 </div>
+            </div>
             }
         </section>
+
     </main>
 </div>

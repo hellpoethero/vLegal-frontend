@@ -10,6 +10,7 @@ import { Datasources } from './app/features/datasources/datasources';
 import { Knowledgebase } from './app/features/knowledgebase/knowledgebase';
 import { Tools } from './app/features/tools/tools';
 import { NewChat } from '@/features/chatbot/new-chat/new-chat';
+import { OldChat } from '@/features/chatbot/old-chat/old-chat';
 
 export const appRoutes: Routes = [
     {
@@ -18,6 +19,7 @@ export const appRoutes: Routes = [
         children: [
             { path: '', component: Dashboard },
             { path: 'chat', component: NewChat },
+            { path: 'chat/:id', component: OldChat },
             { path: 'agents-management', component: Agents },
             { path: 'models-management', component: Models },
             { path: 'datasources-management', component: Datasources },
