@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Component, OnInit, OnDestroy, Renderer2 } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, NgZone, OnInit, OnDestroy, Renderer2, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MenuItem } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -9,6 +9,8 @@ import { MenuModule } from 'primeng/menu';
 import { TagModule } from 'primeng/tag';
 import { FileUploadModule } from 'primeng/fileupload';
 import { TextareaModule } from 'primeng/textarea';
+import { ApiChatMessage, ChatService } from '../chat.service';
+import { MarkdownComponent } from 'ngx-markdown';
 
 interface ChatMessage {
     role: 'user' | 'agent';
@@ -34,23 +36,50 @@ interface DocumentComment {
 @Component({
     selector: 'app-old-chat',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, TextareaModule, MenuModule, TagModule, FileUploadModule],
+    imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, TextareaModule, MenuModule, TagModule, FileUploadModule, MarkdownComponent],
     templateUrl: './old-chat.html',
     styleUrl: './old-chat.scss'
 })
 export class OldChat implements OnInit, OnDestroy {
     private currentChatId: string | null = null;
+    markdownText = [
+        '# PrimeNG Documentation',
+        '',
+        'Generated: 2026-03-04',
+        '',
+        '```typescript',
+        "import { ApplicationConfig } from '@angular/core';",
+        "import { providePrimeNG } from 'primeng/config';",
+        "import Aura from '@primeuix/themes/aura';",
+        '',
+        'export const appConfig: ApplicationConfig = {',
+        '    providers: [',
+        '        providePrimeNG({',
+        '            theme: {',
+        '                preset: Aura',
+        '            }',
+        '        })',
+        '    ]',
+        '};',
+        '```'
+    ].join('\n');
+
+
+    @ViewChild('chatHistoryBody') private chatHistoryBody?: ElementRef<HTMLDivElement>;
 
     constructor(
         private readonly router: Router,
         private readonly route: ActivatedRoute,
-        private readonly renderer: Renderer2
+        private readonly renderer: Renderer2,
+        private readonly chatService: ChatService,
+        private readonly ngZone: NgZone,
+        private readonly changeDetector: ChangeDetectorRef
     ) {
-        this.route.queryParamMap.subscribe((params) => {
-            const chatId = params.get('chatID');
-            const initialPrompt = params.get('prompt');
+        this.route.paramMap.subscribe((params) => {
+            const chatId = params.get('id');
+            const initialPrompt = this.route.snapshot.queryParamMap.get('prompt');
             if (chatId && chatId !== this.currentChatId) {
-                this.loadChat(chatId, initialPrompt);
+                void this.loadConversation(chatId, initialPrompt);
             }
         });
     }
@@ -61,13 +90,18 @@ export class OldChat implements OnInit, OnDestroy {
         this.updateCommentViewOptions();
     }
 
+    ngAfterViewInit(): void {
+        this.scrollChatHistoryToBottom();
+    }
+
     chatTitle = 'Tổng hợp và phân tích văn bản pháp luật';
 
     chatInput = '';
 
-    selectedModel = 'GPT-4o';
+    selectedModel = 'qwen3:4b-instruct';
 
     modelOptions: MenuItem[] = [
+        { label: 'qwen3:4b-instruct', command: () => this.selectModel('qwen3:4b-instruct') },
         { label: 'GPT-4o', command: () => this.selectModel('GPT-4o') },
         { label: 'Claude 3.5 Sonnet', command: () => this.selectModel('Claude 3.5 Sonnet') },
         { label: 'Gemini 2.0 Flash', command: () => this.selectModel('Gemini 2.0 Flash') }
@@ -82,6 +116,8 @@ export class OldChat implements OnInit, OnDestroy {
     activityStep = 0;
 
     messages: ChatMessage[] = [];
+    errorMessage = '';
+    isLoadingConversation = true;
 
     generatedDocuments: GeneratedDocument[] = [
         { id: 1, title: 'Báo cáo tổng hợp nội dung', type: 'DOCX', description: 'Tóm lược các luận điểm và thông tin quan trọng trong tài liệu.', updatedAt: 'Vừa tạo', icon: 'pi pi-file-word' },
@@ -162,13 +198,28 @@ export class OldChat implements OnInit, OnDestroy {
         textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
     }
 
+    handleComposerKeydown(event: KeyboardEvent): void {
+        if (event.ctrlKey && event.key === 'Enter') {
+            event.preventDefault();
+            this.sendMessage();
+        }
+    }
+
     sendMessage(): void {
         const prompt = this.chatInput.trim();
         if (!prompt || this.isGenerating) return;
 
-        this.messages = [...this.messages, { role: 'user', text: prompt }];
+        const requestMessages = this.toApiMessages([...this.messages, { role: 'user', text: prompt }]);
+        const assistantIndex = this.messages.length + 1;
+        this.messages = [...this.messages, { role: 'user', text: prompt }, { role: 'agent', text: '' }];
         this.chatInput = '';
-        this.startGeneration();
+        this.errorMessage = '';
+        this.isGenerating = true;
+        this.activityLabel = 'Đang soạn phản hồi';
+        this.changeDetector.detectChanges();
+        this.scrollChatHistoryToBottom();
+
+        void this.sendChatMessage(requestMessages, assistantIndex);
     }
 
     selectDocument(document: GeneratedDocument): void {
@@ -212,23 +263,93 @@ export class OldChat implements OnInit, OnDestroy {
         }, 850);
     }
 
-    private loadChat(chatId: string, initialPrompt?: string | null): void {
+    private async loadConversation(chatId: string, initialPrompt?: string | null): Promise<void> {
         this.stopGeneration();
         this.currentChatId = chatId;
         this.selectedDocument = null;
         this.chatInput = '';
         this.activityLabel = '';
         this.isGenerating = false;
+        this.isLoadingConversation = true;
+        this.errorMessage = '';
+        let shouldSendInitialPrompt = false;
 
-        if (initialPrompt) {
-            this.messages = [{ role: 'user', text: initialPrompt }];
-            this.startGeneration();
-        } else {
-            this.messages = [
-                { role: 'user', text: 'Hãy tổng hợp nội dung chính và tạo giúp tôi bộ văn bản cần thiết.' },
-                { role: 'agent', text: 'Mình đã hoàn tất và tạo các văn bản phù hợp với yêu cầu của bạn.' }
-            ];
+        try {
+            const conversation = await this.chatService.getConversation(chatId);
+            this.messages = conversation.messages
+                .filter((message) => message.role === 'user' || message.role === 'assistant')
+                .map((message) => ({ role: message.role === 'user' ? 'user' : 'agent', text: message.content }));
+
+            shouldSendInitialPrompt = !!initialPrompt && !this.messages.some((message) => message.role === 'user' && message.text === initialPrompt);
+        } catch (error) {
+            console.error('Không thể tải cuộc trò chuyện', error);
+            this.errorMessage = 'Không thể tải cuộc trò chuyện. Vui lòng thử lại.';
+            this.messages = initialPrompt ? [{ role: 'user', text: initialPrompt }] : [];
+            shouldSendInitialPrompt = !!initialPrompt;
+        } finally {
+            this.isLoadingConversation = false;
+            this.changeDetector.detectChanges();
+            this.scrollChatHistoryToBottom();
         }
+
+        if (shouldSendInitialPrompt) {
+            this.chatInput = initialPrompt ?? '';
+            this.sendMessage();
+        }
+    }
+
+    private async sendChatMessage(requestMessages: ApiChatMessage[], assistantIndex: number): Promise<void> {
+        try {
+            await this.chatService.sendChatWithStreaming(
+                {
+                    conversation_id: this.currentChatId,
+                    messages: requestMessages,
+                    model: this.selectedModel
+                },
+                (content) => {
+                    this.ngZone.run(() => {
+                        const updatedMessages = [...this.messages];
+                        updatedMessages[assistantIndex] = { role: 'agent', text: `${updatedMessages[assistantIndex]?.text ?? ''}${content}` };
+                        this.messages = updatedMessages;
+                        this.changeDetector.detectChanges();
+                        this.scrollChatHistoryToBottom();
+                    });
+                }
+            );
+        } catch (error) {
+            console.error('Không thể gửi tin nhắn', error);
+            this.ngZone.run(() => {
+                this.messages = this.messages.filter((_, index) => index !== assistantIndex);
+                this.errorMessage = 'Không thể nhận phản hồi. Vui lòng thử lại.';
+                this.changeDetector.detectChanges();
+                this.scrollChatHistoryToBottom();
+            });
+        } finally {
+            this.ngZone.run(() => {
+                this.isGenerating = false;
+                this.activityLabel = '';
+                this.changeDetector.detectChanges();
+                this.scrollChatHistoryToBottom();
+            });
+        }
+    }
+
+    private toApiMessages(messages: ChatMessage[]): ApiChatMessage[] {
+        return messages.map((message) => ({
+            role: message.role === 'user' ? 'user' : 'assistant',
+            content: message.text
+        }));
+    }
+
+    private scrollChatHistoryToBottom(): void {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const history = this.chatHistoryBody?.nativeElement;
+                if (history) {
+                    history.scrollTo({ top: history.scrollHeight, behavior: 'auto' });
+                }
+            });
+        });
     }
 
     private stopGeneration(): void {

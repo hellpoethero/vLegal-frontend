@@ -5,12 +5,31 @@
             <div class="chat-section-header">
                 <h2>{{ chatTitle }}</h2>
             </div>
-            <div class="chat-history-body">
+            <div #chatHistoryBody class="chat-history-body">
+                @if (isLoadingConversation) {
+                <div class="agent-activity" aria-live="polite">
+                    <span class="activity-dots"><i></i><i></i><i></i></span>
+                    <span>Đang tải cuộc trò chuyện</span>
+                </div>
+                }
                 @for (message of messages; track $index) {
                 <div class="message-row" [class.user-message]="message.role === 'user'"
                     [class.agent-message]="message.role === 'agent'">
-                    <div class="message-bubble">{{ message.text }}</div>
+                    <div class="message-bubble">
+                        <div *ngIf="message.role === 'user'" class="message-text user-message-text">
+                            {{ message.text }}
+                        </div>
+                    <markdown *ngIf="message.role === 'agent'" [data]="message.text"></markdown>
+                    </div>
+
                 </div>
+                }
+
+            
+                <markdown [data]="markdownText"></markdown>
+
+                @if (errorMessage) {
+                <p class="chat-error" role="alert">{{ errorMessage }}</p>
                 }
                 @if (isGenerating) {
                 <div class="agent-activity" aria-live="polite">
@@ -42,6 +61,7 @@
             <div class="chat-composer" aria-label="Nhập yêu cầu">
                 <div class="composer-input-row">
                     <textarea pTextarea rows="1" [(ngModel)]="chatInput" (input)="resizePrompt($event)"
+                        (keydown)="handleComposerKeydown($event)"
                         placeholder="Nhập tác vụ bạn muốn thực hiện..." aria-label="Nội dung yêu cầu"
                         maxlength="5000"></textarea>
                 </div>

@@ -9,6 +9,7 @@
         <section class="chat-composer" aria-label="Nhập yêu cầu">
             <div class="composer-input-row">
                 <textarea pTextarea rows="1" [(ngModel)]="chatInput" (input)="resizePrompt($event)"
+                    (keydown)="handleComposerKeydown($event)"
                     placeholder="Nhập tác vụ bạn muốn thực hiện..." aria-label="Nội dung yêu cầu"
                     maxlength="5000"></textarea>
             </div>
@@ -35,6 +36,9 @@
                 </div>
             </div>
         </section>
+        @if (errorMessage) {
+        <p class="chat-error" role="alert">{{ errorMessage }}</p>
+        }
 
         <section class="task-section" aria-labelledby="task-title">
             @if (!activeTask) {
@@ -88,3 +92,4 @@
 
     </main>
 </div>
+

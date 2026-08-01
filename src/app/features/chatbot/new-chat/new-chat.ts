@@ -9,6 +9,7 @@ import { MenuModule } from 'primeng/menu';
 import { TagModule } from 'primeng/tag';
 import { FileUploadModule } from 'primeng/fileupload';
 import { TextareaModule } from 'primeng/textarea';
+import { ChatService } from '../chat.service';
 
 @Component({
     selector: 'app-new-chat',
@@ -18,13 +19,17 @@ import { TextareaModule } from 'primeng/textarea';
     styleUrl: './new-chat.scss'
 })
 export class NewChat {
-    constructor(private readonly router: Router) { }
+    constructor(
+        private readonly router: Router,
+        private readonly chatService: ChatService
+    ) { }
 
     chatInput = '';
 
-    selectedModel = 'GPT-4o';
+    selectedModel = 'qwen3:4b-instruct';
 
     modelOptions: MenuItem[] = [
+        { label: 'qwen3:4b-instruct', command: () => this.selectModel('qwen3:4b-instruct') },
         { label: 'GPT-4o', command: () => this.selectModel('GPT-4o') },
         { label: 'Claude 3.5 Sonnet', command: () => this.selectModel('Claude 3.5 Sonnet') },
         { label: 'Gemini 2.0 Flash', command: () => this.selectModel('Gemini 2.0 Flash') }
@@ -105,18 +110,32 @@ export class NewChat {
         textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
     }
 
-    isSubmitting = false;
+    handleComposerKeydown(event: KeyboardEvent): void {
+        if (event.ctrlKey && event.key === 'Enter') {
+            event.preventDefault();
+            void this.sendMessage();
+        }
+    }
 
-    sendMessage(): void {
+    isSubmitting = false;
+    errorMessage = '';
+
+    async sendMessage(): Promise<void> {
         const prompt = this.chatInput.trim();
         if (!prompt || this.isSubmitting) return;
 
         this.isSubmitting = true;
-        const chatId = `chat-${Date.now()}`;
-        setTimeout(() => {
-            void this.router.navigate(['/chat', chatId], {
-                queryParams: { prompt: prompt }
+        this.errorMessage = '';
+
+        try {
+            const conversation = await this.chatService.createConversation(prompt.slice(0, 200));
+            await this.router.navigate(['/chat', conversation.id], {
+                queryParams: { prompt }
             });
-        }, 360);
+        } catch (error) {
+            console.error('Không thể gửi tin nhắn mới', error);
+            this.errorMessage = 'Không thể gửi yêu cầu. Vui lòng thử lại.';
+            this.isSubmitting = false;
+        }
     }
 }

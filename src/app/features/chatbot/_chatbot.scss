@@ -321,7 +321,19 @@ h1 {
 }
 
 .agent-message .message-bubble {
+    width: 100%;
+    box-sizing: border-box;
     padding: 0.5rem 0;
+}
+
+.agent-message {
+    width: 100%;
+    max-width: 100%;
+
+    markdown {
+        display: block;
+        width: 100%;
+    }
 }
 
 .agent-activity {
